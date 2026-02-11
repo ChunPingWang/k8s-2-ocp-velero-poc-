@@ -1,0 +1,92 @@
+$ oc delete namespace demo-app --ignore-not-found
+
+$ velero restore create demo-app-restore --from-backup demo-app-backup --wait
+Restore request "demo-app-restore" submitted successfully.
+Waiting for restore to complete. You may safely press ctrl-c to stop waiting - your restore will continue in the background.
+.
+Restore completed with status: Completed. You may check for more information using the commands `velero restore describe demo-app-restore` and `velero restore logs demo-app-restore`.
+
+$ velero restore describe demo-app-restore --details
+Name:         [1mdemo-app-restore[22m
+Namespace:    velero
+Labels:       <none>
+Annotations:  <none>
+
+Phase:                       [32mCompleted[0m
+Total items to be restored:  20
+Items restored:              20
+
+Started:    2026-02-11 23:10:36 +0800 CST
+Completed:  2026-02-11 23:10:37 +0800 CST
+
+Warnings:
+  Velero:     <none>
+  Cluster:    <none>
+  Namespaces:
+    demo-app:  could not restore, ConfigMap "kube-root-ca.crt" already exists. Warning: the in-cluster version is different than the backed-up version
+
+Backup:  demo-app-backup
+
+Namespaces:
+  Included:  all namespaces found in the backup
+  Excluded:  <none>
+
+Resources:
+  Included:        *
+  Excluded:        nodes, events, events.events.k8s.io, backups.velero.io, restores.velero.io, resticrepositories.velero.io, csinodes.storage.k8s.io, volumeattachments.storage.k8s.io, backuprepositories.velero.io
+  Cluster-scoped:  auto
+
+Namespace mappings:  <none>
+
+Label selector:  <none>
+
+Or label selector:  <none>
+
+Restore PVs:  auto
+
+CSI Snapshot Restores: <none included>
+
+Existing Resource Policy:   <none>
+ItemOperationTimeout:       4h0m0s
+
+Preserve Service NodePorts:  auto
+
+Uploader config:
+
+
+HooksAttempted:   0
+HooksFailed:      0
+
+Resource List:
+  apps/v1/Deployment:
+    - demo-app/frontend(created)
+    - demo-app/postgres(created)
+  apps/v1/ReplicaSet:
+    - demo-app/frontend-55488668d5(created)
+    - demo-app/postgres-77448799f8(created)
+  discovery.k8s.io/v1/EndpointSlice:
+    - demo-app/frontend-svc-kb9gr(created)
+    - demo-app/postgres-svc-cpd2d(created)
+  v1/ConfigMap:
+    - demo-app/app-config(created)
+    - demo-app/kube-root-ca.crt(failed)
+  v1/Endpoints:
+    - demo-app/frontend-svc(created)
+    - demo-app/postgres-svc(created)
+  v1/Namespace:
+    - demo-app(created)
+  v1/PersistentVolume:
+    - pvc-7d7bbd2e-f69b-4165-b854-6928fc517b84(skipped)
+  v1/PersistentVolumeClaim:
+    - demo-app/postgres-data(created)
+  v1/Pod:
+    - demo-app/frontend-55488668d5-8zbvf(created)
+    - demo-app/frontend-55488668d5-fpq8h(created)
+    - demo-app/postgres-77448799f8-vbm2j(created)
+  v1/Secret:
+    - demo-app/app-secret(created)
+  v1/Service:
+    - demo-app/frontend-svc(created)
+    - demo-app/postgres-svc(created)
+  v1/ServiceAccount:
+    - demo-app/default(skipped)

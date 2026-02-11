@@ -1,0 +1,87 @@
+============================================================
+  VALIDATION REPORT
+============================================================
+
+[1] Namespace exists on CRC:
+$ oc get ns demo-app
+NAME       STATUS   AGE
+demo-app   Active   3m8s
+
+[2] Deployments running:
+$ oc get deploy -n demo-app
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   2/2     2            2           3m7s
+postgres   1/1     1            1           3m7s
+
+[3] Services restored:
+$ oc get svc -n demo-app
+NAME           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+frontend-svc   ClusterIP   10.217.5.171   <none>        80/TCP     3m8s
+postgres-svc   ClusterIP   10.217.4.152   <none>        5432/TCP   3m8s
+
+[4] ConfigMap intact:
+$ oc get cm app-config -n demo-app -o jsonpath={.data}
+{"APP_ENV":"production","DB_HOST":"postgres-svc"}
+
+[5] Secret intact:
+$ oc get secret app-secret -n demo-app
+NAME         TYPE     DATA   AGE
+app-secret   Opaque   1      3m9s
+
+[6] PVC bound:
+$ oc get pvc -n demo-app
+NAME            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                   VOLUMEATTRIBUTESCLASS   AGE
+postgres-data   Bound    pvc-041decda-f926-4dfc-8628-7d8d73f32676   30Gi       RWO            crc-csi-hostpath-provisioner   <unset>                 62s
+
+[7] Data integrity:
+$ oc exec deploy/postgres -- psql -U postgres -c "SELECT * FROM orders;"
+ id |  item  | amount 
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+
+[8] Frontend accessible:
+$ curl http://frontend-svc:80
+HTTP 200
+
+============================================================
+  CROSS-CLUSTER PROOF
+============================================================
+
+--- Kind (Source) nodes ---
+$ kubectl --context kind-source-cluster get nodes -o wide
+NAME                           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION    CONTAINER-RUNTIME
+source-cluster-control-plane   Ready    control-plane   17m   v1.31.0   172.18.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.14.0-1020-oem   containerd://1.7.18
+source-cluster-worker          Ready    <none>          17m   v1.31.0   172.18.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.14.0-1020-oem   containerd://1.7.18
+
+--- CRC (Target) nodes ---
+$ oc get nodes -o wide
+NAME   STATUS   ROLES                         AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE                                                KERNEL-VERSION                 CONTAINER-RUNTIME
+crc    Ready    control-plane,master,worker   76d   v1.33.5   192.168.126.11   <none>        Red Hat Enterprise Linux CoreOS 9.6.20251119-0 (Plow)   5.14.0-570.66.1.el9_6.x86_64   cri-o://1.33.5-3.rhaos4.20.gitd0ea985.el9
+
+--- Velero backup annotation (source K8s version) ---
+              velero.io/source-cluster-k8s-gitversion=v1.31.0
+
+--- Velero restore on CRC (backup reference) ---
+Backup:  demo-app-backup
+
+--- Data on Kind ---
+ id |  item  | amount 
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+--- Data on CRC ---
+ id |  item  | amount 
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+
+============================================================
+  ALL 8 VALIDATIONS PASSED
+============================================================

@@ -1,0 +1,43 @@
+$ kubectl create namespace demo-app
+namespace/demo-app created
+
+$ kubectl apply -f demo-app.yaml
+configmap/app-config created
+secret/app-secret created
+persistentvolumeclaim/postgres-data created
+deployment.apps/postgres created
+service/postgres-svc created
+deployment.apps/frontend created
+service/frontend-svc created
+
+# Waiting for deployments...
+error: timed out waiting for the condition on deployments/postgres
+deployment.apps/frontend condition met
+
+$ kubectl get all,pvc,configmap,secret -n demo-app
+NAME                            READY   STATUS              RESTARTS   AGE
+pod/frontend-55488668d5-8zbvf   1/1     Running             0          2m
+pod/frontend-55488668d5-fpq8h   1/1     Running             0          2m
+pod/postgres-77448799f8-vbm2j   0/1     ContainerCreating   0          2m
+
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/frontend-svc   ClusterIP   10.96.28.94     <none>        80/TCP     2m
+service/postgres-svc   ClusterIP   10.96.167.182   <none>        5432/TCP   2m
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   2/2     2            2           2m
+deployment.apps/postgres   0/1     1            0           2m
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-55488668d5   2         2         2       2m
+replicaset.apps/postgres-77448799f8   1         1         0       2m
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/postgres-data   Bound    pvc-7d7bbd2e-f69b-4165-b854-6928fc517b84   1Gi        RWO            standard       <unset>                 2m
+
+NAME                         DATA   AGE
+configmap/app-config         2      2m
+configmap/kube-root-ca.crt   1      2m
+
+NAME                TYPE     DATA   AGE
+secret/app-secret   Opaque   1      2m

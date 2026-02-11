@@ -1,0 +1,29 @@
+$ mkdir -p /tmp/kind-pv
+$ kind create cluster --name source-cluster --config kind-config.yaml
+Creating cluster "source-cluster" ...
+ • Ensuring node image (kindest/node:v1.31.0) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.31.0) 🖼
+ • Preparing nodes 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-source-cluster"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-source-cluster
+
+Have a nice day! 👋
+
+$ kubectl cluster-info --context kind-source-cluster
+Kubernetes control plane is running at https://127.0.0.1:41373
+CoreDNS is running at https://127.0.0.1:41373/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.

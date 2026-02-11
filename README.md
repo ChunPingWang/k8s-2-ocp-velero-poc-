@@ -70,6 +70,28 @@ kubectl cluster-info --context kind-source-cluster
 
 > **給初學者：** `kind-config.yaml` 定義了叢集的節點配置，`extraMounts` 讓容器可以存取主機上的 `/tmp/kind-pv` 目錄，用來模擬持久化儲存。
 
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ kind create cluster --name source-cluster --config kind-config.yaml
+Creating cluster "source-cluster" ...
+ ✓ Ensuring node image (kindest/node:v1.31.0) 🖼
+ ✓ Preparing nodes 📦 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-source-cluster"
+
+$ kubectl cluster-info --context kind-source-cluster
+Kubernetes control plane is running at https://127.0.0.1:41373
+CoreDNS is running at https://127.0.0.1:41373/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+```
+
+</details>
+
 #### 1.2 啟動 OpenShift Local（目標叢集）
 
 ```bash
@@ -84,6 +106,21 @@ oc login -u kubeadmin https://api.crc.testing:6443
 ```
 
 > **給初學者：** CRC 是一個精簡版的 OpenShift，跑在本機虛擬機中。`crc start` 會啟動這個虛擬機。
+
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ crc status
+CRC VM:          Running
+OpenShift:       Running (v4.20.5)
+RAM Usage:       6.942GB of 10.95GB
+Disk Usage:      26.76GB of 32.68GB (Inside the CRC VM)
+Cache Usage:     31.59GB
+Cache Directory: /home/rexwang/.crc/cache
+```
+
+</details>
 
 #### 1.3 部署 MinIO（共用備份儲存）
 
@@ -107,6 +144,20 @@ docker run --rm --net=host --entrypoint sh minio/mc -c \
 > - Port 9001 是 MinIO 的 Web 管理介面，你可以在瀏覽器開啟 `http://localhost:9001` 查看
 > - 帳號密碼都是 `minioadmin`
 
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ docker run -d --name minio ...
+8c8ca9f00ac1b56dec8eb5c5eef56672356d45981c781f98042186d9fcc96962
+
+$ mc alias set local http://localhost:9000 minioadmin minioadmin && mc mb local/k8s-backups
+Added `local` successfully.
+Bucket created successfully `local/k8s-backups`.
+```
+
+</details>
+
 #### 1.4 確認連線
 
 確保兩個叢集都能連到 MinIO。先找到主機 IP：
@@ -115,6 +166,27 @@ docker run --rm --net=host --entrypoint sh minio/mc -c \
 # 取得主機 IP（記下來，後面會用到）
 hostname -I | awk '{print $1}'
 ```
+
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ hostname -I | awk '{print $1}'
+10.0.0.11
+
+--- Test from Kind ---
+$ kubectl run test-minio --rm -i --restart=Never --image=curlimages/curl -- curl -s http://10.0.0.11:9000/minio/health/live
+HTTP 200
+
+--- Test from CRC ---
+$ oc login -u kubeadmin https://api.crc.testing:6443
+Login successful.
+
+$ oc run test-minio --rm -i --restart=Never --image=curlimages/curl -- curl -s http://10.0.0.11:9000/minio/health/live
+HTTP 200
+```
+
+</details>
 
 ---
 
@@ -144,6 +216,25 @@ kubectl apply -f demo-app.yaml
 > | Deployment | frontend | Nginx 前端（2 副本） |
 > | Service | frontend-svc | 前端服務（port 80） |
 
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ kubectl create namespace demo-app
+namespace/demo-app created
+
+$ kubectl apply -f demo-app.yaml
+configmap/app-config created
+secret/app-secret created
+persistentvolumeclaim/postgres-data created
+deployment.apps/postgres created
+service/postgres-svc created
+deployment.apps/frontend created
+service/frontend-svc created
+```
+
+</details>
+
 #### 2.2 寫入測試資料
 
 ```bash
@@ -163,6 +254,47 @@ kubectl get all,pvc,configmap,secret -n demo-app -o wide > baseline-state.txt
 kubectl exec -n demo-app deploy/postgres -- \
   psql -U postgres -c "SELECT * FROM orders;" > baseline-data.txt
 ```
+
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ kubectl exec -n demo-app deploy/postgres -- psql -U postgres -c "CREATE TABLE orders(...); INSERT INTO ..."
+CREATE TABLE
+INSERT 0 2
+
+$ kubectl exec -n demo-app deploy/postgres -- psql -U postgres -c "SELECT * FROM orders;"
+ id |  item  | amount
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+$ kubectl get all,pvc,configmap,secret -n demo-app
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/frontend-55488668d5-8zbvf   1/1     Running   0          5m9s
+pod/frontend-55488668d5-fpq8h   1/1     Running   0          5m9s
+pod/postgres-77448799f8-vbm2j   1/1     Running   0          5m9s
+
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/frontend-svc   ClusterIP   10.96.28.94     <none>        80/TCP     5m9s
+service/postgres-svc   ClusterIP   10.96.167.182   <none>        5432/TCP   5m9s
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   2/2     2            2           5m9s
+deployment.apps/postgres   1/1     1            1           5m9s
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+persistentvolumeclaim/postgres-data   Bound    pvc-7d7bbd2e-f69b-4165-b854-6928fc517b84   1Gi        RWO            standard       5m9s
+
+NAME                         DATA   AGE
+configmap/app-config         2      5m9s
+
+NAME                TYPE     DATA   AGE
+secret/app-secret   Opaque   1      5m9s
+```
+
+</details>
 
 ---
 
@@ -249,6 +381,39 @@ oc adm policy add-scc-to-user anyuid -z velero -n velero
 velero backup-location get
 ```
 
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ velero version --client-only
+Client:
+    Version: v1.15.2
+    Git commit: 804d73c4f2349f1ca9bd3d6c751956e1d2021c01
+
+--- Kind 安裝完成 ---
+Velero is installed! ⛵ Use 'kubectl logs deployment/velero -n velero' to view the status.
+
+--- CRC 安裝完成 ---
+Velero is installed! ⛵ Use 'kubectl logs deployment/velero -n velero' to view the status.
+
+$ oc adm policy add-scc-to-user privileged -z velero -n velero
+clusterrole.rbac.authorization.k8s.io/system:openshift:scc:privileged added: "velero"
+$ oc adm policy add-scc-to-user anyuid -z velero -n velero
+clusterrole.rbac.authorization.k8s.io/system:openshift:scc:anyuid added: "velero"
+
+--- 驗證 Kind ---
+$ velero --kubecontext kind-source-cluster backup-location get
+NAME      PROVIDER   BUCKET/PREFIX   PHASE       LAST VALIDATED                  ACCESS MODE   DEFAULT
+default   aws        k8s-backups     Available   2026-02-11 23:07:50 +0800 CST   ReadWrite     true
+
+--- 驗證 CRC ---
+$ velero --kubecontext default/api-crc-testing:6443/kubeadmin backup-location get
+NAME      PROVIDER   BUCKET/PREFIX   PHASE       LAST VALIDATED                  ACCESS MODE   DEFAULT
+default   aws        k8s-backups     Available   2026-02-11 23:08:22 +0800 CST   ReadWrite     true
+```
+
+</details>
+
 ---
 
 ### Phase 4：從 Kind 建立備份
@@ -275,6 +440,60 @@ docker run --rm --net=host --entrypoint sh minio/mc -c \
 
 > **你應該會看到：** 備份狀態為 `Completed`，MinIO 中有一個 `demo-app-backup/` 目錄。
 
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ velero backup create demo-app-backup --include-namespaces demo-app --default-volumes-to-fs-backup --wait
+Backup request "demo-app-backup" submitted successfully.
+Waiting for backup to complete. You may safely press ctrl-c to stop waiting - your backup will continue in the background.
+.
+Backup completed with status: Completed.
+
+$ velero backup describe demo-app-backup --details
+Name:         demo-app-backup
+Namespace:    velero
+Annotations:  velero.io/source-cluster-k8s-gitversion=v1.31.0
+
+Phase:  Completed
+
+Started:    2026-02-11 23:09:14 +0800 CST
+Completed:  2026-02-11 23:09:15 +0800 CST
+
+Total items to be backed up:  44
+Items backed up:              44
+
+Resource List:
+  apps/v1/Deployment:
+    - demo-app/frontend
+    - demo-app/postgres
+  apps/v1/ReplicaSet:
+    - demo-app/frontend-55488668d5
+    - demo-app/postgres-77448799f8
+  v1/ConfigMap:
+    - demo-app/app-config
+  v1/Namespace:
+    - demo-app
+  v1/PersistentVolumeClaim:
+    - demo-app/postgres-data
+  v1/Pod:
+    - demo-app/frontend-55488668d5-8zbvf
+    - demo-app/frontend-55488668d5-fpq8h
+    - demo-app/postgres-77448799f8-vbm2j
+  v1/Secret:
+    - demo-app/app-secret
+  v1/Service:
+    - demo-app/frontend-svc
+    - demo-app/postgres-svc
+  v1/ServiceAccount:
+    - demo-app/default
+
+$ mc ls local/k8s-backups/backups/
+[2026-02-11 15:09:16 UTC]     0B demo-app-backup/
+```
+
+</details>
+
 ---
 
 ### Phase 5：還原至 OpenShift Local
@@ -293,6 +512,48 @@ velero restore create demo-app-restore \
   --from-backup demo-app-backup \
   --wait
 ```
+
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ velero restore create demo-app-restore --from-backup demo-app-backup --wait
+Restore request "demo-app-restore" submitted successfully.
+Waiting for restore to complete.
+.
+Restore completed with status: Completed.
+
+Phase:                       Completed
+Total items to be restored:  20
+Items restored:              20
+
+Backup:  demo-app-backup
+
+Resource List:
+  apps/v1/Deployment:
+    - demo-app/frontend(created)
+    - demo-app/postgres(created)
+  apps/v1/ReplicaSet:
+    - demo-app/frontend-55488668d5(created)
+    - demo-app/postgres-77448799f8(created)
+  v1/ConfigMap:
+    - demo-app/app-config(created)
+  v1/Namespace:
+    - demo-app(created)
+  v1/PersistentVolumeClaim:
+    - demo-app/postgres-data(created)
+  v1/Pod:
+    - demo-app/frontend-55488668d5-8zbvf(created)
+    - demo-app/frontend-55488668d5-fpq8h(created)
+    - demo-app/postgres-77448799f8-vbm2j(created)
+  v1/Secret:
+    - demo-app/app-secret(created)
+  v1/Service:
+    - demo-app/frontend-svc(created)
+    - demo-app/postgres-svc(created)
+```
+
+</details>
 
 #### 5.3 還原後修復
 
@@ -332,6 +593,53 @@ oc rollout status deployment/frontend -n demo-app --timeout=120s
 > - **SCC 限制**：OpenShift 預設不允許容器以 root 或特定 UID 執行
 > - **重啟 Pod**：讓 Pod 套用新的安全設定
 
+<details>
+<summary>執行紀錄（點擊展開）</summary>
+
+```
+$ oc delete pvc postgres-data -n demo-app
+persistentvolumeclaim "postgres-data" deleted
+
+$ oc apply -f pvc-fix.yaml
+persistentvolumeclaim/postgres-data created
+
+$ oc adm policy add-scc-to-user anyuid -z default -n demo-app
+clusterrole.rbac.authorization.k8s.io/system:openshift:scc:anyuid added: "default"
+
+$ oc rollout restart deployment/postgres -n demo-app
+deployment.apps/postgres restarted
+$ oc rollout restart deployment/frontend -n demo-app
+deployment.apps/frontend restarted
+
+deployment "postgres" successfully rolled out
+deployment "frontend" successfully rolled out
+
+$ oc get all,pvc,configmap,secret -n demo-app
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/frontend-86c75b46d8-44944   1/1     Running   0          1s
+pod/frontend-86c75b46d8-db9sn   1/1     Running   0          2s
+pod/postgres-66cdb5dfcc-69wsp   1/1     Running   0          3s
+
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/frontend-svc   ClusterIP   10.217.5.171   <none>        80/TCP     2m9s
+service/postgres-svc   ClusterIP   10.217.4.152   <none>        5432/TCP   2m9s
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   2/2     2            2           2m9s
+deployment.apps/postgres   1/1     1            1           2m9s
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                   AGE
+persistentvolumeclaim/postgres-data   Bound    pvc-041decda-f926-4dfc-8628-7d8d73f32676   30Gi       RWO            crc-csi-hostpath-provisioner   3s
+
+NAME                         DATA   AGE
+configmap/app-config         2      2m10s
+
+NAME                TYPE     DATA   AGE
+secret/app-secret   Opaque   1      2m10s
+```
+
+</details>
+
 ---
 
 ### Phase 6：驗證還原結果
@@ -355,13 +663,117 @@ oc rollout status deployment/frontend -n demo-app --timeout=120s
 | 7 | 資料完整性 | `oc exec deploy/postgres -- psql -U postgres -c "SELECT * FROM orders;"` | Widget, Gadget |
 | 8 | 前端可存取 | `oc port-forward svc/frontend-svc 8080:80` | HTTP 200 |
 
+<details>
+<summary>驗證結果（點擊展開）</summary>
+
+```
+============================================================
+  VALIDATION REPORT
+============================================================
+
+[1] Namespace exists on CRC:
+$ oc get ns demo-app
+NAME       STATUS   AGE
+demo-app   Active   3m8s
+
+[2] Deployments running:
+$ oc get deploy -n demo-app
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   2/2     2            2           3m7s
+postgres   1/1     1            1           3m7s
+
+[3] Services restored:
+$ oc get svc -n demo-app
+NAME           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+frontend-svc   ClusterIP   10.217.5.171   <none>        80/TCP     3m8s
+postgres-svc   ClusterIP   10.217.4.152   <none>        5432/TCP   3m8s
+
+[4] ConfigMap intact:
+$ oc get cm app-config -n demo-app -o jsonpath={.data}
+{"APP_ENV":"production","DB_HOST":"postgres-svc"}
+
+[5] Secret intact:
+$ oc get secret app-secret -n demo-app
+NAME         TYPE     DATA   AGE
+app-secret   Opaque   1      3m9s
+
+[6] PVC bound:
+$ oc get pvc -n demo-app
+NAME            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                   AGE
+postgres-data   Bound    pvc-041decda-f926-4dfc-8628-7d8d73f32676   30Gi       RWO            crc-csi-hostpath-provisioner   62s
+
+[7] Data integrity:
+$ oc exec deploy/postgres -- psql -U postgres -c "SELECT * FROM orders;"
+ id |  item  | amount
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+[8] Frontend accessible:
+$ curl http://frontend-svc:80
+HTTP 200
+
+============================================================
+  ALL 8 VALIDATIONS PASSED
+============================================================
+```
+
+</details>
+
+---
+
+### 跨叢集證明
+
+以下證明備份確實來自 Kind 叢集，並成功還原至 CRC OpenShift 叢集：
+
+<details>
+<summary>跨叢集證明（點擊展開）</summary>
+
+```
+--- Kind (Source) nodes ---
+$ kubectl --context kind-source-cluster get nodes -o wide
+NAME                           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   OS-IMAGE                         CONTAINER-RUNTIME
+source-cluster-control-plane   Ready    control-plane   17m   v1.31.0   172.18.0.3    Debian GNU/Linux 12 (bookworm)   containerd://1.7.18
+source-cluster-worker          Ready    <none>          17m   v1.31.0   172.18.0.2    Debian GNU/Linux 12 (bookworm)   containerd://1.7.18
+
+--- CRC (Target) nodes ---
+$ oc get nodes -o wide
+NAME   STATUS   ROLES                         AGE   VERSION   INTERNAL-IP      OS-IMAGE                                                CONTAINER-RUNTIME
+crc    Ready    control-plane,master,worker   76d   v1.33.5   192.168.126.11   Red Hat Enterprise Linux CoreOS 9.6.20251119-0 (Plow)   cri-o://1.33.5-3.rhaos4.20.gitd0ea985.el9
+
+--- Velero backup annotation (source K8s version) ---
+velero.io/source-cluster-k8s-gitversion=v1.31.0
+
+--- Velero restore on CRC (backup reference) ---
+Backup:  demo-app-backup
+
+--- Data on Kind ---
+ id |  item  | amount
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+--- Data on CRC ---
+ id |  item  | amount
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+```
+
+**結論：** 兩個完全不同的叢集（Kind K8s v1.31 vs CRC OpenShift v4.20.5），透過 Velero + MinIO 成功完成跨叢集備份與還原。
+
+</details>
+
 ---
 
 ## 專案檔案結構
 
 ```
 .
-├── README.md                                    # 本文件（繁體中文說明）
+├── README.md                                    # 本文件（繁體中文說明，含執行紀錄）
 ├── poc-k8s-backup-to-openshift-recovery.md      # PoC 完整計畫文件（英文）
 ├── kind-config.yaml                             # Kind 叢集設定
 ├── demo-app.yaml                                # 範例應用 Kubernetes manifest
@@ -369,6 +781,20 @@ oc rollout status deployment/frontend -n demo-app --timeout=120s
 ├── phase4-backup.sh                             # Phase 4: 備份腳本
 ├── phase5-restore.sh                            # Phase 5: 還原腳本
 ├── phase6-validate.sh                           # Phase 6: 驗證腳本
+├── logs/                                        # 各階段執行紀錄
+│   ├── phase1-kind-create.log
+│   ├── phase1-crc-status.log
+│   ├── phase1-minio-setup.log
+│   ├── phase1-connectivity.log
+│   ├── phase2-deploy.log
+│   ├── phase2-seed-data.log
+│   ├── phase3-velero-install.log
+│   ├── phase3-velero-crc.log
+│   ├── phase3-verify.log
+│   ├── phase4-backup.log
+│   ├── phase5-restore.log
+│   ├── phase5-fixups.log
+│   └── phase6-validation.log
 ├── baseline-state.txt                           # 備份前的資源狀態
 ├── baseline-data.txt                            # 備份前的資料庫內容
 ├── restored-state.txt                           # 還原後的資源狀態

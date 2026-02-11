@@ -1,0 +1,7 @@
+$ crc status
+CRC VM:          Running
+OpenShift:       Running (v4.20.5)
+RAM Usage:       6.942GB of 10.95GB
+Disk Usage:      26.76GB of 32.68GB (Inside the CRC VM)
+Cache Usage:     31.59GB
+Cache Directory: /home/rexwang/.crc/cache

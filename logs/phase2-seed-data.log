@@ -1,0 +1,39 @@
+$ kubectl exec -n demo-app deploy/postgres -- psql -U postgres -c "CREATE TABLE ..."
+CREATE TABLE
+INSERT 0 2
+
+$ kubectl exec -n demo-app deploy/postgres -- psql -U postgres -c "SELECT * FROM orders;"
+ id |  item  | amount 
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+
+
+$ kubectl get all,pvc,configmap,secret -n demo-app
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/frontend-55488668d5-8zbvf   1/1     Running   0          5m9s
+pod/frontend-55488668d5-fpq8h   1/1     Running   0          5m9s
+pod/postgres-77448799f8-vbm2j   1/1     Running   0          5m9s
+
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/frontend-svc   ClusterIP   10.96.28.94     <none>        80/TCP     5m9s
+service/postgres-svc   ClusterIP   10.96.167.182   <none>        5432/TCP   5m9s
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   2/2     2            2           5m9s
+deployment.apps/postgres   1/1     1            1           5m9s
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-55488668d5   2         2         2       5m9s
+replicaset.apps/postgres-77448799f8   1         1         1       5m9s
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/postgres-data   Bound    pvc-7d7bbd2e-f69b-4165-b854-6928fc517b84   1Gi        RWO            standard       <unset>                 5m9s
+
+NAME                         DATA   AGE
+configmap/app-config         2      5m9s
+configmap/kube-root-ca.crt   1      5m9s
+
+NAME                TYPE     DATA   AGE
+secret/app-secret   Opaque   1      5m9s

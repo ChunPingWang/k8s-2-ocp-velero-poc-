@@ -1,0 +1,59 @@
+=== Post-Restore Fixups ===
+
+$ oc delete pvc postgres-data -n demo-app
+persistentvolumeclaim "postgres-data" deleted
+$ oc apply -f pvc-fix.yaml
+persistentvolumeclaim/postgres-data created
+
+$ oc adm policy add-scc-to-user anyuid -z default -n demo-app
+clusterrole.rbac.authorization.k8s.io/system:openshift:scc:anyuid added: "default"
+
+$ oc rollout restart deployment/postgres deployment/frontend -n demo-app
+deployment.apps/postgres restarted
+deployment.apps/frontend restarted
+
+# Waiting for rollout...
+Waiting for deployment "postgres" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "postgres" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "postgres" rollout to finish: 1 old replicas are pending termination...
+deployment "postgres" successfully rolled out
+Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+deployment "frontend" successfully rolled out
+
+$ oc get all,pvc,configmap,secret -n demo-app
+Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
+NAME                            READY   STATUS        RESTARTS   AGE
+pod/frontend-55488668d5-fpq8h   1/1     Terminating   0          2m9s
+pod/frontend-86c75b46d8-44944   1/1     Running       0          1s
+pod/frontend-86c75b46d8-db9sn   1/1     Running       0          2s
+pod/postgres-66cdb5dfcc-69wsp   1/1     Running       0          3s
+pod/postgres-77448799f8-vbm2j   0/1     Completed     0          2m9s
+
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/frontend-svc   ClusterIP   10.217.5.171   <none>        80/TCP     2m9s
+service/postgres-svc   ClusterIP   10.217.4.152   <none>        5432/TCP   2m9s
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   2/2     2            2           2m9s
+deployment.apps/postgres   1/1     1            1           2m9s
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-55488668d5   0         0         0       2m9s
+replicaset.apps/frontend-86c75b46d8   2         2         2       2s
+replicaset.apps/postgres-66cdb5dfcc   1         1         1       3s
+replicaset.apps/postgres-77448799f8   0         0         0       2m9s
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/postgres-data   Bound    pvc-041decda-f926-4dfc-8628-7d8d73f32676   30Gi       RWO            crc-csi-hostpath-provisioner   <unset>                 3s
+
+NAME                                 DATA   AGE
+configmap/app-config                 2      2m10s
+configmap/kube-root-ca.crt           1      2m10s
+configmap/openshift-service-ca.crt   1      2m10s
+
+NAME                              TYPE                      DATA   AGE
+secret/app-secret                 Opaque                    1      2m10s
+secret/builder-dockercfg-dhkjm    kubernetes.io/dockercfg   1      2m10s
+secret/default-dockercfg-lc7nx    kubernetes.io/dockercfg   1      2m10s
+secret/deployer-dockercfg-pw5qz   kubernetes.io/dockercfg   1      2m10s

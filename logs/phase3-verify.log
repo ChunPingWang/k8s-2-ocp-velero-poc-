@@ -1,0 +1,9 @@
+=== Verify Velero on both clusters ===
+
+$ velero --kubecontext kind-source-cluster backup-location get
+NAME      PROVIDER   BUCKET/PREFIX   PHASE       LAST VALIDATED                  ACCESS MODE   DEFAULT
+default   aws        k8s-backups     Available   2026-02-11 23:07:50 +0800 CST   ReadWrite     true
+
+$ velero --kubecontext default/api-crc-testing:6443/kubeadmin backup-location get
+NAME      PROVIDER   BUCKET/PREFIX   PHASE       LAST VALIDATED                  ACCESS MODE   DEFAULT
+default   aws        k8s-backups     Available   2026-02-11 23:08:22 +0800 CST   ReadWrite     true

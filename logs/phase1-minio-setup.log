@@ -1,0 +1,10 @@
+$ docker run -d --name minio \
+  -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio server /data --console-address ":9001"
+8c8ca9f00ac1b56dec8eb5c5eef56672356d45981c781f98042186d9fcc96962
+
+$ docker run --rm --net=host --entrypoint sh minio/mc -c "mc alias set local ... && mc mb local/k8s-backups"
+Added `local` successfully.
+Bucket created successfully `local/k8s-backups`.

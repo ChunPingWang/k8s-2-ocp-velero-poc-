@@ -1,0 +1,131 @@
+$ velero backup create demo-app-backup --include-namespaces demo-app --default-volumes-to-fs-backup --wait
+Backup request "demo-app-backup" submitted successfully.
+Waiting for backup to complete. You may safely press ctrl-c to stop waiting - your backup will continue in the background.
+.
+Backup completed with status: Completed. You may check for more information using the commands `velero backup describe demo-app-backup` and `velero backup logs demo-app-backup`.
+
+$ velero backup describe demo-app-backup --details
+Name:         [1mdemo-app-backup[22m
+Namespace:    velero
+Labels:       velero.io/storage-location=default
+Annotations:  velero.io/resource-timeout=10m0s
+              velero.io/source-cluster-k8s-gitversion=v1.31.0
+              velero.io/source-cluster-k8s-major-version=1
+              velero.io/source-cluster-k8s-minor-version=31
+
+Phase:  [32mCompleted[0m
+
+
+Warnings:
+  Velero:     <none>
+  Cluster:    <none>
+  Namespaces:
+    demo-app:   resource: /pods name: /postgres-77448799f8-vbm2j message: /Volume pgdata in pod demo-app/postgres-77448799f8-vbm2j is a hostPath volume which is not supported for pod volume backup, skipping
+
+Namespaces:
+  Included:  demo-app
+  Excluded:  <none>
+
+Resources:
+  Included:        *
+  Excluded:        <none>
+  Cluster-scoped:  auto
+
+Label selector:  <none>
+
+Or label selector:  <none>
+
+Storage Location:  default
+
+Velero-Native Snapshot PVs:  auto
+Snapshot Move Data:          false
+Data Mover:                  velero
+
+TTL:  720h0m0s
+
+CSISnapshotTimeout:    10m0s
+ItemOperationTimeout:  4h0m0s
+
+Hooks:  <none>
+
+Backup Format Version:  1.1.0
+
+Started:    2026-02-11 23:09:14 +0800 CST
+Completed:  2026-02-11 23:09:15 +0800 CST
+
+Expiration:  2026-03-13 23:09:14 +0800 CST
+
+Total items to be backed up:  44
+Items backed up:              44
+
+Resource List:
+  apps/v1/Deployment:
+    - demo-app/frontend
+    - demo-app/postgres
+  apps/v1/ReplicaSet:
+    - demo-app/frontend-55488668d5
+    - demo-app/postgres-77448799f8
+  discovery.k8s.io/v1/EndpointSlice:
+    - demo-app/frontend-svc-kb9gr
+    - demo-app/postgres-svc-cpd2d
+  v1/ConfigMap:
+    - demo-app/app-config
+    - demo-app/kube-root-ca.crt
+  v1/Endpoints:
+    - demo-app/frontend-svc
+    - demo-app/postgres-svc
+  v1/Event:
+    - demo-app/frontend-55488668d5-8zbvf.1893391d4dfba50e
+    - demo-app/frontend-55488668d5-8zbvf.1893391d65201228
+    - demo-app/frontend-55488668d5-8zbvf.1893392e16fa6c9d
+    - demo-app/frontend-55488668d5-8zbvf.1893392e184d9fe9
+    - demo-app/frontend-55488668d5-8zbvf.1893392e1cf823c3
+    - demo-app/frontend-55488668d5-fpq8h.1893391d4e2dc0cd
+    - demo-app/frontend-55488668d5-fpq8h.1893391d6520123f
+    - demo-app/frontend-55488668d5-fpq8h.1893392ec5757c07
+    - demo-app/frontend-55488668d5-fpq8h.1893392ec6410587
+    - demo-app/frontend-55488668d5-fpq8h.1893392ecb32f8e4
+    - demo-app/frontend-55488668d5.1893391d4dc247c7
+    - demo-app/frontend-55488668d5.1893391d4dfa4fac
+    - demo-app/frontend.1893391d4d937e20
+    - demo-app/postgres-77448799f8-vbm2j.1893391e0044bccb
+    - demo-app/postgres-77448799f8-vbm2j.1893391e1720a317
+    - demo-app/postgres-77448799f8-vbm2j.1893393fa8d6dc9c
+    - demo-app/postgres-77448799f8-vbm2j.1893393faa9c1cd0
+    - demo-app/postgres-77448799f8-vbm2j.1893393faf6119aa
+    - demo-app/postgres-77448799f8.1893391d4cc26517
+    - demo-app/postgres-data.1893391d4bfca600
+    - demo-app/postgres-data.1893391d4d2ed3de
+    - demo-app/postgres-data.1893391d4d664a40
+    - demo-app/postgres-data.1893391dcadb5df3
+    - demo-app/postgres.1893391d4c8b640a
+  v1/Namespace:
+    - demo-app
+  v1/PersistentVolume:
+    - pvc-7d7bbd2e-f69b-4165-b854-6928fc517b84
+  v1/PersistentVolumeClaim:
+    - demo-app/postgres-data
+  v1/Pod:
+    - demo-app/frontend-55488668d5-8zbvf
+    - demo-app/frontend-55488668d5-fpq8h
+    - demo-app/postgres-77448799f8-vbm2j
+  v1/Secret:
+    - demo-app/app-secret
+  v1/Service:
+    - demo-app/frontend-svc
+    - demo-app/postgres-svc
+  v1/ServiceAccount:
+    - demo-app/default
+
+Backup Volumes:
+  Velero-Native Snapshots: <none included>
+
+  CSI Snapshots: <none included>
+
+  Pod Volume Backups: <none included>
+
+HooksAttempted:  0
+HooksFailed:     0
+
+$ mc ls local/k8s-backups/backups/
+[2026-02-11 15:09:16 UTC]     0B demo-app-backup/
