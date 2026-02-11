@@ -1,0 +1,33 @@
+Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
+NAME                            READY   STATUS    RESTARTS   AGE   IP            NODE   NOMINATED NODE   READINESS GATES
+pod/frontend-5586998dc-qpshx    1/1     Running   0          66s   10.217.0.52   crc    <none>           <none>
+pod/frontend-5586998dc-x57gn    1/1     Running   0          66s   10.217.0.55   crc    <none>           <none>
+pod/postgres-54999bff6b-4xkcs   1/1     Running   0          67s   10.217.0.50   crc    <none>           <none>
+
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/frontend-svc   ClusterIP   10.217.5.18    <none>        80/TCP     95s   app=frontend
+service/postgres-svc   ClusterIP   10.217.4.167   <none>        5432/TCP   94s   app=postgres
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES        SELECTOR
+deployment.apps/frontend   2/2     2            2           94s   nginx        nginx:1.25    app=frontend
+deployment.apps/postgres   1/1     1            1           94s   postgres     postgres:15   app=postgres
+
+NAME                                  DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES        SELECTOR
+replicaset.apps/frontend-55488668d5   0         0         0       95s   nginx        nginx:1.25    app=frontend,pod-template-hash=55488668d5
+replicaset.apps/frontend-5586998dc    2         2         2       67s   nginx        nginx:1.25    app=frontend,pod-template-hash=5586998dc
+replicaset.apps/postgres-54999bff6b   1         1         1       67s   postgres     postgres:15   app=postgres,pod-template-hash=54999bff6b
+replicaset.apps/postgres-77448799f8   0         0         0       95s   postgres     postgres:15   app=postgres,pod-template-hash=77448799f8
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/postgres-data   Bound    pvc-32a83ba9-8050-4847-97e5-d6c355925cb5   30Gi       RWO            crc-csi-hostpath-provisioner   <unset>                 75s   Filesystem
+
+NAME                                 DATA   AGE
+configmap/app-config                 2      95s
+configmap/kube-root-ca.crt           1      95s
+configmap/openshift-service-ca.crt   1      95s
+
+NAME                              TYPE                      DATA   AGE
+secret/app-secret                 Opaque                    1      95s
+secret/builder-dockercfg-rrz66    kubernetes.io/dockercfg   1      95s
+secret/default-dockercfg-5mvkp    kubernetes.io/dockercfg   1      95s
+secret/deployer-dockercfg-d8p9h   kubernetes.io/dockercfg   1      95s
