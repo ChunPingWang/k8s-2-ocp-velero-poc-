@@ -1,0 +1,6 @@
+ id |  item  | amount 
+----+--------+--------
+  1 | Widget |  99.95
+  2 | Gadget | 149.00
+(2 rows)
+

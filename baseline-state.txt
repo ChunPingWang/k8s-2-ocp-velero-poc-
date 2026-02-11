@@ -1,0 +1,26 @@
+NAME                            READY   STATUS    RESTARTS        AGE   IP           NODE                    NOMINATED NODE   READINESS GATES
+pod/frontend-55488668d5-n4xmq   1/1     Running   1 (9m30s ago)   19m   10.244.1.3   source-cluster-worker   <none>           <none>
+pod/frontend-55488668d5-qqkhs   1/1     Running   1 (9m30s ago)   19m   10.244.1.4   source-cluster-worker   <none>           <none>
+pod/postgres-77448799f8-dlj6q   1/1     Running   1 (9m30s ago)   19m   10.244.1.6   source-cluster-worker   <none>           <none>
+
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/frontend-svc   ClusterIP   10.96.26.132   <none>        80/TCP     19m   app=frontend
+service/postgres-svc   ClusterIP   10.96.62.97    <none>        5432/TCP   19m   app=postgres
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES        SELECTOR
+deployment.apps/frontend   2/2     2            2           19m   nginx        nginx:1.25    app=frontend
+deployment.apps/postgres   1/1     1            1           19m   postgres     postgres:15   app=postgres
+
+NAME                                  DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES        SELECTOR
+replicaset.apps/frontend-55488668d5   2         2         2       19m   nginx        nginx:1.25    app=frontend,pod-template-hash=55488668d5
+replicaset.apps/postgres-77448799f8   1         1         1       19m   postgres     postgres:15   app=postgres,pod-template-hash=77448799f8
+
+NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/postgres-data   Bound    pvc-31aa2a5f-2e6c-455f-8997-e0738267f42b   1Gi        RWO            standard       <unset>                 19m   Filesystem
+
+NAME                         DATA   AGE
+configmap/app-config         2      19m
+configmap/kube-root-ca.crt   1      19m
+
+NAME                TYPE     DATA   AGE
+secret/app-secret   Opaque   1      19m
