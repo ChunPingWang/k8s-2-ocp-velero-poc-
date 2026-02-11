@@ -28,7 +28,7 @@
 ## Backup Details
 
 - **Backup Name:** demo-app-backup
-- **Items Backed Up:** 47 resources
+- **Items Backed Up:** 44 resources
 - **Resources Included:** Deployments, ReplicaSets, Services, ConfigMaps, Secrets, PVCs, Pods, ServiceAccounts, EndpointSlices, PersistentVolumes, Namespace
 
 ## Restore Details
